@@ -12,8 +12,10 @@ class Lexer(object):
     IDENTIFIER.remove('"')
     IDENTIFIER.remove('(')
     IDENTIFIER.remove(')')
+    IDENTIFIER.remove(':')
     START_IDENT = list(string.letters+string.punctuation)
     START_IDENT.remove('"')
+    START_IDENT.remove(':')
     ESCAPED_CHARS = '"\\'
     EOF = ('EOF', '')
 
@@ -83,6 +85,7 @@ class Lexer(object):
             return self.state_number
         elif c in self.START_IDENT:
             return self.state_token
+        raise SyntaxError('invalid state')
 
     def state_call(self):
         self.next() # swallow the paren that got us here
@@ -146,7 +149,14 @@ class Lexer(object):
     def state_token(self):
         s = self.next()
         s += self.accept(self.IDENTIFIER)
-        self.emit('name', s)
+        if self.peek() == ':':
+            self.next()
+            self.state = self.state_start
+            expr = self.token()
+            print 'expr', expr
+            self.emit('kwname', (s, expr))
+        else:
+            self.emit('name', s)
         return self.state_start
 
     def state_number(self):
@@ -243,10 +253,19 @@ class Parser(object):
                     return ast.Expr(op)
                 else:
                     return op
-            elif name in ('print', 'printn'):
-                nl = not (name == 'printn')
-                print nl
-                values = [self.parse(v, expr=False) for v in call[1:]]
+            elif name == 'print':
+                # TODO: replace me with the print_function from future
+                values = [self.parse(v, expr=False) for v in call[1:] if v[0] != 'kwname']
+                kwargs = dict((v[1][0], self.parse(v[1][1], expr=False)) for v in call[1:] if v[0] == 'kwname')
+                if 'nl' in kwargs:
+                    if kwargs['nl'].id == 'True':
+                        nl = True
+                    elif kwargs['nl'].id == 'False':
+                        nl = False
+                    else:
+                        raise SyntaxError('invalid option "nl" passed to print')
+                else:
+                    nl = True
                 stmt = ast.Print(
                     values=values,
                     nl=nl,
@@ -254,19 +273,15 @@ class Parser(object):
                 return stmt
             else:
                 func = self.parse_name(call[0])
-            c_ast.func = func
-        args = []
-        for t in call[1:]:
-            if t[0] == 'call':
-                v = self.parse(t).value
-            else:
-                v = self.parse(t)
-            args.append(v)
-        c_ast.args = args
-        if expr:
-            return ast.Expr(c_ast)
-        else:
-            return c_ast
+                c_ast.func = func
+                values = [self.parse(v, expr=False) for v in call[1:] if v[0] != 'kwname']
+                kwargs = list(ast.keyword(v[1][0], self.parse(v[1][1], expr=False)) for v in call[1:] if v[0] == 'kwname')
+                c_ast.args = values
+                c_ast.keywords = kwargs
+                if expr:
+                    return ast.Expr(c_ast)
+                else:
+                    return c_ast
 
 
     def parse(self, tok=None, expr=True):
@@ -302,7 +317,7 @@ if __name__ == '__main__':
 # ;)
 # '''
     #ex = '(raw_input (str (** (~ (and 2 3)) (int "101" (+ 1 1)))))'
-    ex = '(printn (str (and True True False)) "asdf") (printn "test")'
+    ex = '(print (str object: (and True True False)) nl: False "asdf") (print "test")'
     l = Lexer(ex)
     while 1:
         x = l.token()
