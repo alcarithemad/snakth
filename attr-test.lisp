@@ -1,1 +1,1 @@
-(print ((str "a b").split " ") "a b".split)
+(print ((str "a b").split " ") "a b".lstrip)

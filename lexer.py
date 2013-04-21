@@ -93,7 +93,7 @@ class Lexer(object):
         while t[0] != 'commit':
             c.append(t)
             t = self.token()
-            if t[0] == 'attr' and t[1][0] == '':
+            if t[0] == 'attr' and t[1][0][1] == '':
                 t[1][0] = c[-1]
                 c[-1]= t
                 t = (False,)
@@ -161,7 +161,7 @@ class Lexer(object):
             name = attrs[0]
             attrs = attrs[1:]
             # print ('attr', (name, attrs))
-            self.emit('attr', [name, attrs])
+            self.emit('attr', [['name', name], attrs])
         else:
             self.emit('name', s)
         return self.state_start
