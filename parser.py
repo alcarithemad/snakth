@@ -130,7 +130,6 @@ class Parser(object):
             elif name == 'if':
                 test = self.parse(call[1], expr=False)
                 body = [self.parse(call[2], expr=False)]
-                print len(call)
                 if len(call) == 4:
                     orelse = [self.parse(call[3], expr=False)]
                 else:
@@ -150,7 +149,6 @@ class Parser(object):
                 kwarg = None
                 args = [a[1:] for a in args]
                 defaults = []
-                print args
                 for argument in args:
                     arg = argument[0]
                     if len(argument) > 1:
@@ -170,8 +168,6 @@ class Parser(object):
                     kwarg = kwarg.id.lstrip('**')
                 except ValueError: pass
                 args = ast.arguments(args, vararg, kwarg, defaults)
-                print ast.dump(args)
-                print 'body', call[3:]
                 func = ast.FunctionDef(
                     name=f_name,
                     args=args,

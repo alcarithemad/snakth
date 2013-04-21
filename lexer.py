@@ -149,7 +149,7 @@ class Lexer(object):
             self.next()
             self.state = self.state_start
             expr = self.token()
-            print 'expr', expr
+            # print 'expr', expr
             self.emit('kwname', (s, expr))
         else:
             self.emit('name', s)
@@ -164,7 +164,7 @@ class Lexer(object):
             expr = expr[1]
         else:
             arg = 'vararg'
-        print 'expr', expr
+        # print 'expr', expr
         self.emit(arg, expr)
         return self.state_start
 

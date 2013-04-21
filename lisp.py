@@ -12,10 +12,11 @@ if __name__ == '__main__':
     l = Lexer(ex)
     while 1:
         x = l.token()
-        pprint(x)
+        # pprint(x)
         if x == l.EOF:
             break
     l = Lexer(ex)
     p = Parser(l)
-    print ast.dump(p.run())
-    exec compile(p.tree, '<string>', 'exec')
+    p.run()
+    # print ast.dump(p.tree)
+    exec compile(p.tree, sys.argv[1], 'exec')
