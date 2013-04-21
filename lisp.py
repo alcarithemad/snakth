@@ -271,12 +271,27 @@ class Parser(object):
                     nl=nl,
                 )
                 return stmt
+            elif name == 'if':
+                test = self.parse(call[1], expr=False)
+                body = [self.parse(call[2], expr=False)]
+                print len(call)
+                if len(call) == 4:
+                    orelse = [self.parse(call[3], expr=False)]
+                else:
+                    orelse = []
+                stmt = ast.If(
+                    test=test,
+                    body=body,
+                    orelse=orelse,    
+                )
+                return stmt
             else:
+                #this is a regular function call
                 func = self.parse_name(call[0])
                 c_ast.func = func
-                values = [self.parse(v, expr=False) for v in call[1:] if v[0] != 'kwname']
+                args = [self.parse(v, expr=False) for v in call[1:] if v[0] != 'kwname']
                 kwargs = list(ast.keyword(v[1][0], self.parse(v[1][1], expr=False)) for v in call[1:] if v[0] == 'kwname')
-                c_ast.args = values
+                c_ast.args = args
                 c_ast.keywords = kwargs
                 if expr:
                     return ast.Expr(c_ast)
@@ -317,7 +332,8 @@ if __name__ == '__main__':
 # ;)
 # '''
     #ex = '(raw_input (str (** (~ (and 2 3)) (int "101" (+ 1 1)))))'
-    ex = '(print (str object: (and True True False)) nl: False "asdf") (print "test")'
+    ex = '(if (raw_input "testing?") (print (str object: (and True True False)) nl: False "asdf") (print "test"))'
+    # ex = '(if False (print))'
     l = Lexer(ex)
     while 1:
         x = l.token()
@@ -326,5 +342,5 @@ if __name__ == '__main__':
             break
     l = Lexer(ex)
     p = Parser(l)
-    print ast.dump(p.run())
+    print ast.dump(p.run(), True, True)
     exec compile(p.tree, '<string>', 'exec')
