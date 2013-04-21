@@ -15,5 +15,5 @@ if __name__ == '__main__':
     l = Lexer(ex)
     p = Parser(l)
     p.run()
-    # print ast.dump(p.tree)
+    print ast.dump(p.tree)
     exec compile(p.tree, sys.argv[1], 'exec')

@@ -183,6 +183,21 @@ class Parser(object):
                 else:
                     op = ast.Return()
                 return op
+            elif name == 'import':
+                args = [self.parse(v, expr=False) for v in call[1:] if v[0] != 'kwname']
+                module = args[0]
+                names = [ast.alias(a.id, None) for a in args[1:]]
+                aliased = [ast.alias(v[1][0], v[1][1][1]) for v in call[1:] if v[0] == 'kwname']
+                names = names + aliased
+                print module, names
+                if len(names): # this is a from foo import ...
+                    # TODO: support level param
+                    level = 0
+                    imp = ast.ImportFrom(module.id, names, level)
+                else:
+                    print 'single module'
+                    imp = ast.Import([ast.alias(module.id, None)])
+                return imp
             else:
                 #this is a regular function call
                 # TODO: support calling with varargs
@@ -191,7 +206,7 @@ class Parser(object):
                 func = self.parse_name(call[0])
                 c_ast.func = func
                 args = [self.parse(v, expr=False) for v in call[1:] if v[0] not in ('vararg', 'kwname', 'kwarg')]
-                kwargs = list(ast.keyword(v[1][0], self.parse(v[1][1], expr=False)) for v in call[1:] if v[0] == 'kwname')
+                kwargs = [ast.keyword(v[1][0], self.parse(v[1][1], expr=False)) for v in call[1:] if v[0] == 'kwname']
                 for v in call[1:]:
                     if v[0] == 'vararg':
                         c_ast.starargs = self.parse(v[1], expr=False)
