@@ -131,7 +131,9 @@ class Lexer(object):
         s = self.next()
         c = self.peek()
         escaped = c == '\\'
-        while c:
+        if escaped: # swallow the backlash we just decided to escape
+            c = self.next()
+        while 1:
             if escaped and c in self.ESCAPED_CHARS:
                 escaped = False
                 s += self.next()
