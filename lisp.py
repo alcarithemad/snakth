@@ -189,6 +189,18 @@ class Parser(object):
         'and':ast.And,
         'or':ast.Or,
     }
+    CMPOPS = {
+        '=':ast.Eq,
+        '!=':ast.NotEq,
+        '<':ast.Lt,
+        '<=':ast.LtE,
+        '>':ast.Gt,
+        '>=':ast.GtE,
+        'is':ast.Is,
+        "isn't":ast.IsNot,
+        'in':ast.In,
+        'not-in':ast.NotIn,
+    }
 
     def __init__(self, lexer):
         self.lexer = lexer
@@ -238,6 +250,16 @@ class Parser(object):
                 op = ast.BoolOp(
                     op=self.BOOLOPS[name](),
                     values=values
+                )
+                if expr:
+                    return ast.Expr(op)
+                else:
+                    return op
+            elif name in self.CMPOPS:
+                op = ast.Compare(
+                    left = self.parse(call[1], expr=False),
+                    ops=[self.CMPOPS[name]()],
+                    comparators=[self.parse(call[2], expr=False)]
                 )
                 if expr:
                     return ast.Expr(op)
@@ -320,20 +342,12 @@ class Parser(object):
 
 if __name__ == '__main__':
     from pprint import pprint
-#     ex = '(+ 1 (- 2 s3! "asdf $%#%$ escaped \\" works!")); asdf'
-#     ex = '''
-# (raw_input (str "test"))
-# ;(if (> a b);test
-# ;  (x 1 (+ y 2))
-# ;  False
-# ;)
-# ;(
-# ;  (lambda x (* x x)) 3
-# ;)
-# '''
     #ex = '(raw_input (str (** (~ (and 2 3)) (int "101" (+ 1 1)))))'
-    ex = '(if (raw_input "testing?") (print (str object: (and True True False)) nl: False "asdf") (print "test"))'
+    ex = '''(if (>= 3 (int (raw_input "3 >= x? ")))
+        (print (str object: (and True True False)) nl: False "asdf\\"")
+        (print "test"))'''
     # ex = '(if False (print))'
+    # ex = '(print (> 3 2))'
     l = Lexer(ex)
     while 1:
         x = l.token()
