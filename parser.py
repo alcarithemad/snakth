@@ -68,8 +68,18 @@ class Parser(object):
     def parse_attr_both(self, tok, expr=True):
         first = self.parse(tok[1][0], expr=expr)
         attr = tok[1][1]
-        print 'a', attr, first
         attr = self.attr_wrap(first, attr)
+        return attr
+
+    def subscript_wrap(self, name, slc, ctx=ast.Load()):
+        return ast.Subscript(value=name, slice=slc, ctx=ctx)
+
+    def parse_subscript(self, tok, expr=True):
+        # TODO: support real slices
+        first = self.parse(tok[1][0], expr=expr)
+        index = self.parse(tok[1][1])
+        index = ast.Index(index)
+        attr = self.subscript_wrap(first, index)
         return attr
 
     def parse_int(self, tok):
@@ -211,15 +221,17 @@ class Parser(object):
                 names = [ast.alias(a.id, None) for a in args[1:]]
                 aliased = [ast.alias(v[1][0], v[1][1][1]) for v in call[1:] if v[0] == 'kwname']
                 names = names + aliased
-                print module, names
                 if len(names): # this is a from foo import ...
                     # TODO: support level param
                     level = 0
                     imp = ast.ImportFrom(module.id, names, level)
                 else:
-                    print 'single module'
                     imp = ast.Import([ast.alias(module.id, None)])
                 return imp
+            elif name == 'exec':
+                body = self.parse(call[1], expr=False)
+                ex = ast.Exec(body=body)
+                return ex
             else:
                 #this is a regular function call
                 # TODO: support calling with varargs
@@ -240,7 +252,7 @@ class Parser(object):
                     return ast.Expr(c_ast)
                 else:
                     return c_ast
-        raise ValueError
+        raise ValueError(call)
 
 
     def parse(self, tok=None, expr=True):
@@ -250,8 +262,9 @@ class Parser(object):
         elif t[0] == 'name':
             return self.parse_name(t)
         elif t[0] == 'attr':
-            print t
             return self.parse_attr_both(t, expr=False)
+        elif t[0] == 'subscript':
+            return self.parse_subscript(t)
         elif t[0] == int:
             return self.parse_int(t)
         elif t[0] == str:

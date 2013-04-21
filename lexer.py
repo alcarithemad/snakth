@@ -6,12 +6,14 @@ class Lexer(object):
     IDENTIFIER.remove('(')
     IDENTIFIER.remove(')')
     IDENTIFIER.remove(':')
+    IDENTIFIER.remove('[')
     START_IDENT = list(string.letters+string.punctuation)
     START_IDENT.remove('"')
     START_IDENT.remove(':')
+    START_IDENT.remove('[')
     ESCAPED_CHARS = '"\\'
     NUMBERS = string.digits+'+-'
-    EOF = ('EOF', '')
+    EOF = ['EOF', '']
 
     def __init__(self, code):
         self.input = code
@@ -77,6 +79,10 @@ class Lexer(object):
             return self.state_string
         elif c == ':':
             return self.state_vararg
+        elif c == '[':
+            return self.state_subscript
+        elif c == ']':
+            return self.state_endsub
         elif c in self.NUMBERS:
             return self.state_number
         elif c in self.START_IDENT:
@@ -86,21 +92,29 @@ class Lexer(object):
     def state_call(self):
         self.next() # swallow the paren that got us here
         self.depth += 1
-        # print 'calling', self.peek()
         self.state = self.state_start
         c = []
         t = self.token()
-        while t[0] != 'commit':
-            c.append(t)
+        c.append(t)
+        while 1:
             t = self.token()
             if t[0] == 'attr' and t[1][0][1] == '':
                 t[1][0] = c[-1]
                 c[-1]= t
-                t = (False,)
-            elif t[0] == self.EOF:
+                t = False
+            elif t[0] == 'subscript':
+                t[1][0] = c[-1]
+                c[-1]= t
+                t = False
+                # print c[-1]
+            elif t == ['commit', '']:
+                break
+            elif t == self.EOF:
                 raise EOFError
-        #print 'tok', t
-        c = filter(lambda x:len(x)>1, c)
+            if t and t[0] != 'commit':
+                c.append(t)
+            else:
+                t = ['', '']
         self.emit('call', c)
         return self.state_start
 
@@ -145,6 +159,20 @@ class Lexer(object):
     def state_chomp(self):
         while self.peek() in string.whitespace:
             self.next()
+        return self.state_start
+
+    def state_subscript(self):
+        self.next() # eat a [
+        self.state = self.state_start
+        s = ['', self.token()]
+        while s[-1][1] != 'endsub':
+            s.append(['']+list(self.token()))
+        self.emit('subscript', s[:-1])
+        return self.state_start
+
+    def state_endsub(self):
+        self.next()
+        self.emit('endsub', '')
         return self.state_start
 
     def state_token(self):
