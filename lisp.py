@@ -17,6 +17,7 @@ class Lexer(object):
     START_IDENT.remove('"')
     START_IDENT.remove(':')
     ESCAPED_CHARS = '"\\'
+    NUMBERS = string.digits+'+-'
     EOF = ('EOF', '')
 
     def __init__(self, code):
@@ -81,7 +82,7 @@ class Lexer(object):
             return self.state_comment
         elif c == '"':
             return self.state_string
-        elif c in string.digits:
+        elif c in self.NUMBERS:
             return self.state_number
         elif c in self.START_IDENT:
             return self.state_token
@@ -160,7 +161,7 @@ class Lexer(object):
         return self.state_start
 
     def state_number(self):
-        n = self.accept(string.digits)
+        n = self.accept(self.NUMBERS)
         self.emit(int, n)
         return self.state_start
 
@@ -206,7 +207,6 @@ class Parser(object):
         self.lexer = lexer
         self.tree = ast.Module([])
         self.tokens = []
-        self.scopes = [ast.Load()]
 
     def token(self):
         if len(self.tokens):
@@ -217,8 +217,8 @@ class Parser(object):
     def unread(self, tok):
         self.tokens.insert(0, tok)
 
-    def parse_name(self, tok):
-        return ast.Name(tok[1], self.scopes[-1])
+    def parse_name(self, tok, ctx=ast.Load()):
+        return ast.Name(tok[1], ctx)
         
     def parse_int(self, tok):
         return ast.Num(int(tok[1]))
@@ -307,8 +307,47 @@ class Parser(object):
                     orelse=orelse,    
                 )
                 return stmt
+            elif name == 'def':
+                f_name = call[1][1]
+                args = [(i, self.parse(v, expr=False)) for i, v in enumerate(call[2][1]) if v[0] != 'kwname']
+                args += [(i, self.parse(('name', v[1][0]), expr=False), self.parse(v[1][1], expr=False)) for i, v in enumerate(call[2][1]) if v[0] == 'kwname']
+                args.sort()
+                vararg = None
+                kwarg = None
+                args = [a[1:] for a in args]
+                defaults = []
+                print args
+                for argument in args:
+                    arg = argument[0]
+                    if len(argument) > 1:
+                        defaults.append(argument[1])
+                    arg.ctx = ast.Param()
+                    if arg.id.startswith('**'):
+                        kwarg = arg
+                    elif arg.id.startswith('*'):
+                        vararg = arg
+                args = [a[0] for a in args]
+                try:
+                    args.remove(vararg)
+                    vararg = vararg.id.lstrip('*')
+                except ValueError: pass
+                try:
+                    args.remove(kwarg)
+                    kwarg = kwarg.id.lstrip('**')
+                except ValueError: pass
+                args = ast.arguments(args, vararg, kwarg, defaults)
+                print ast.dump(args)
+                print 'body', call[3:]
+                func = ast.FunctionDef(
+                    name=f_name,
+                    args=args,
+                    body=[self.parse(v) for v in call[3:]],
+                    decorator_list=[], # not sure these fit with the syntax
+                )
+                return func
             else:
                 #this is a regular function call
+                # TODO: support calling with varargs
                 func = self.parse_name(call[0])
                 c_ast.func = func
                 args = [self.parse(v, expr=False) for v in call[1:] if v[0] != 'kwname']
@@ -342,10 +381,9 @@ class Parser(object):
 
 if __name__ == '__main__':
     from pprint import pprint
+    import sys
     #ex = '(raw_input (str (** (~ (and 2 3)) (int "101" (+ 1 1)))))'
-    ex = '''(if (>= 3 (int (raw_input "3 >= x? ")))
-        (print (str object: (and True True False)) nl: False "asdf\\"")
-        (print "test"))'''
+    ex = file(sys.argv[1], 'rb').read()
     # ex = '(if False (print))'
     # ex = '(print (> 3 2))'
     l = Lexer(ex)
@@ -356,5 +394,5 @@ if __name__ == '__main__':
             break
     l = Lexer(ex)
     p = Parser(l)
-    print ast.dump(p.run(), True, True)
+    print ast.dump(p.run())
     exec compile(p.tree, '<string>', 'exec')
