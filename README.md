@@ -36,7 +36,6 @@ TODO:
 * more options for literals (floats, hexadecimal/octal/binary numbers, real string escapes)
 * loop constructs (for, while)
 * yield
-* classes (easier than it sounds)
 * probably other things
 
 Why 'snakth'?

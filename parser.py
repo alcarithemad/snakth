@@ -232,6 +232,17 @@ class Parser(object):
                 body = self.parse(call[1], expr=False)
                 ex = ast.Exec(body=body)
                 return ex
+            elif name == 'class':
+                clsname = call[1][1]
+                bases = [self.parse(v, expr=False) for v in call[2][1]]
+                body = [self.parse(v, expr=False) for v in call[3:]]
+                cls = ast.ClassDef(
+                    name=clsname,
+                    bases=bases,
+                    body=body,
+                    decorator_list=[],
+                )
+                return cls
             else:
                 #this is a regular function call
                 # TODO: support calling with varargs
