@@ -155,7 +155,6 @@ class Lexer(object):
         return self.state_start
 
 class Parser(object):
-    PSEUDONAMES = ['+']
     BINOPS = {
         '+':ast.Add,
         '-':ast.Sub,
@@ -244,6 +243,15 @@ class Parser(object):
                     return ast.Expr(op)
                 else:
                     return op
+            elif name in ('print', 'printn'):
+                nl = not (name == 'printn')
+                print nl
+                values = [self.parse(v, expr=False) for v in call[1:]]
+                stmt = ast.Print(
+                    values=values,
+                    nl=nl,
+                )
+                return stmt
             else:
                 func = self.parse_name(call[0])
             c_ast.func = func
@@ -294,7 +302,7 @@ if __name__ == '__main__':
 # ;)
 # '''
     #ex = '(raw_input (str (** (~ (and 2 3)) (int "101" (+ 1 1)))))'
-    ex = '(raw_input (str (and True True False)))'
+    ex = '(printn (str (and True True False)) "asdf") (printn "test")'
     l = Lexer(ex)
     while 1:
         x = l.token()
