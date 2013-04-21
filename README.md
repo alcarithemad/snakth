@@ -10,7 +10,7 @@ This compiles s-expressions (think lisp, parentheses everywhere) to Python by wa
 
 ```
 ; is a comment
-(import re); from re import match as regex
+(import re)
 (if (re.match "^\\d{3}-\\d{4}$" (raw_input "phone number? "))
     (print "that's probably a phone number")
     (print "that doesn't look like a phone number")
