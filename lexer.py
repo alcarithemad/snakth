@@ -22,7 +22,7 @@ class Lexer(object):
         self.state = self.state_start
 
     def emit(self, typ, val):
-        self.tokens.append((typ, val))
+        self.tokens.append([typ, val])
 
     def next(self):
         self.pos += 1
@@ -93,9 +93,14 @@ class Lexer(object):
         while t[0] != 'commit':
             c.append(t)
             t = self.token()
-            if t[0] == self.EOF:
+            if t[0] == 'attr' and t[1][0] == '':
+                t[1][0] = c[-1]
+                c[-1]= t
+                t = (False,)
+            elif t[0] == self.EOF:
                 raise EOFError
         #print 'tok', t
+        c = filter(lambda x:len(x)>1, c)
         self.emit('call', c)
         return self.state_start
 
@@ -111,7 +116,7 @@ class Lexer(object):
         self.next() # swallow the opening "
         s = self.next()
         c = self.peek()
-        escaped = c in self.ESCAPED_CHARS
+        escaped = c == '\\'
         while c:
             if escaped and c in self.ESCAPED_CHARS:
                 escaped = False
@@ -151,6 +156,12 @@ class Lexer(object):
             expr = self.token()
             # print 'expr', expr
             self.emit('kwname', (s, expr))
+        elif '.' in s:
+            attrs = s.split('.')
+            name = attrs[0]
+            attrs = attrs[1:]
+            # print ('attr', (name, attrs))
+            self.emit('attr', [name, attrs])
         else:
             self.emit('name', s)
         return self.state_start

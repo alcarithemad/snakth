@@ -55,6 +55,23 @@ class Parser(object):
     def parse_name(self, tok, ctx=ast.Load()):
         return ast.Name(tok[1], ctx)
         
+    def parse_attr(self, tok, ctx=ast.Load()):
+        name = tok[1]
+        n = ast.Name(name[0], ctx)
+        return self.attr_wrap(n, name[1:], ctx)
+
+    def attr_wrap(self, name, attrs, ctx=ast.Load()):
+        for attr in attrs:
+            name = ast.Attribute(value=name, attr=attr, ctx=ctx)
+        return name
+
+    def parse_attr_both(self, tok, expr=True):
+        first = self.parse(tok[1][0], expr=expr)
+        attr = tok[1][1]
+        print 'a', attr, first
+        attr = self.attr_wrap(first, attr)
+        return attr
+
     def parse_int(self, tok):
         return ast.Num(int(tok[1]))
 
@@ -63,10 +80,15 @@ class Parser(object):
 
     def parse_call(self, tok, expr=True):
         call = tok[1]
-        if call[0][0] == 'call':
-            c = self.parse_call(call[0])
-        elif call[0][0] == 'name':
-            name = call[0][1]
+        if call[0][0] == 'attr':
+            pname = self.parse(call[0], False)
+        else:
+            pname = None
+        if call[0][0] == 'name' or pname:
+            if pname:
+                name = ''
+            else:
+                name = call[0][1]
             if name in self.BINOPS and len(call) == 3:
                 op = ast.BinOp(
                     left=self.parse(call[1], expr=False),
@@ -203,7 +225,7 @@ class Parser(object):
                 # TODO: support calling with varargs
                 c_ast = ast.Call()
 
-                func = self.parse_name(call[0])
+                func = pname or self.parse_name(call[0])
                 c_ast.func = func
                 args = [self.parse(v, expr=False) for v in call[1:] if v[0] not in ('vararg', 'kwname', 'kwarg')]
                 kwargs = [ast.keyword(v[1][0], self.parse(v[1][1], expr=False)) for v in call[1:] if v[0] == 'kwname']
@@ -218,6 +240,7 @@ class Parser(object):
                     return ast.Expr(c_ast)
                 else:
                     return c_ast
+        raise ValueError
 
 
     def parse(self, tok=None, expr=True):
@@ -226,6 +249,9 @@ class Parser(object):
             return self.parse_call(t, expr=expr)
         elif t[0] == 'name':
             return self.parse_name(t)
+        elif t[0] == 'attr':
+            print t
+            return self.parse_attr_both(t, expr=False)
         elif t[0] == int:
             return self.parse_int(t)
         elif t[0] == str:
