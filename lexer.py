@@ -12,7 +12,7 @@ class Lexer(object):
     START_IDENT.remove(':')
     START_IDENT.remove('[')
     ESCAPED_CHARS = '"\\'
-    NUMBERS = string.digits+'+-'
+    NUMBERS = string.digits+'-'
     EOF = ['EOF', '']
 
     def __init__(self, code):
