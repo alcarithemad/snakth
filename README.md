@@ -4,7 +4,7 @@ snakth
 A sexp -> python compiler.
 
 Wait, what?
-=====
+=======
 
 This compiles s-expressions (think lisp, parentheses everywhere) to Python by way of the normal Python AST. It's all very pre-pre-alpha, but you can do quite a bit with it already:
 
@@ -38,3 +38,8 @@ TODO:
 * yield
 * classes (easier than it sounds)
 * probably other things
+
+Why 'snakth'?
+=======
+
+It's how one might say 'snake' if one had a very bad lisp.
