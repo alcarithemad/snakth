@@ -5,6 +5,8 @@ import os.path
 import sys
 import traceback
 
+import __future__
+
 from lexer import Lexer
 from parser import Parser
 
@@ -42,9 +44,7 @@ def load_file(fn, name=None):
     sys.modules[name] = result
     try:
         code = file(fn, 'rb').read()
-        parsed = Parser(Lexer(code)).run()
-        compiled = compile(parsed, fn, 'exec')
-        #pseudo = dict([(k, v) for k, v in globals().items()])
+        compiled = compile_snakth(code, fn)
         pseudo = {}
         pseudo['__name__'] = name
         exec compiled in pseudo
@@ -55,19 +55,39 @@ def load_file(fn, name=None):
         print traceback.format_exc()
         raise
 
-if __name__ == '__main__':
-    from pprint import pprint
-    ex = file(sys.argv[1], 'rb').read()
-    # l = Lexer(ex)
-    # while 1:
-    #     x = l.token()
-    #     pprint(x)
-    #     if x == l.EOF:
-    #         break
+def compile_snakth(ex, fn='<string>', debug=False):
+    # ensure that snakth imports from within snakth files works
+    install_import_hook()
+    if debug:
+        l = Lexer(ex)
+        while 1:
+            x = l.token()
+            pprint(x)
+            if x == l.EOF:
+                break
     l = Lexer(ex)
     p = Parser(l)
     p.run()
-    # print ast.dump(p.tree)
-    c = compile(p.tree, sys.argv[1], 'exec')
-    exec c
-    #pprint([(a,  getattr(c, a)) for a in dir(c)])
+    c = compile(p.tree, fn, 'exec', __future__.print_function.compiler_flag)
+    return c
+
+if __name__ == '__main__':
+    from pprint import pprint
+    import argparse
+    parser = argparse.ArgumentParser(description='snakth compiler')
+    parser.add_argument('-d', '--debug', 
+        help='enable compile time debugging (currently just outputs the parse tree)',
+        action='store_true'
+    )
+    parser.add_argument('file', nargs='?')
+
+    args = parser.parse_args()
+    if not os.path.exists(args.file):
+        parser.print_help()
+        sys.exit()
+
+    code = file(args.file, 'rb').read()
+    c = compile_snakth(code, args.file, args.debug)
+    pseudo = {}
+    pseudo['__name__'] = __name__
+    exec c in pseudo
