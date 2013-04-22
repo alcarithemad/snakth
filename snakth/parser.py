@@ -141,24 +141,6 @@ class Parser(object):
                     return ast.Expr(op)
                 else:
                     return op
-            elif name == 'print':
-                # TODO: replace me with the print_function from future
-                values = [self.parse(v, expr=False) for v in call[1:] if v[0] != 'kwname']
-                kwargs = dict((v[1][0], self.parse(v[1][1], expr=False)) for v in call[1:] if v[0] == 'kwname')
-                if 'nl' in kwargs:
-                    if kwargs['nl'].id == 'True':
-                        nl = True
-                    elif kwargs['nl'].id == 'False':
-                        nl = False
-                    else:
-                        raise SyntaxError('invalid option "nl" passed to print')
-                else:
-                    nl = True
-                stmt = ast.Print(
-                    values=values,
-                    nl=nl,
-                )
-                return stmt
             elif name == 'if':
                 test = self.parse(call[1], expr=False)
                 body = [self.parse(call[2], expr=False)]
@@ -245,7 +227,6 @@ class Parser(object):
                 return cls
             else:
                 #this is a regular function call
-                # TODO: support calling with varargs
                 c_ast = ast.Call()
 
                 func = pname or self.parse_name(call[0])

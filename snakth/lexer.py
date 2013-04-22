@@ -135,10 +135,14 @@ class Lexer(object):
             c = self.next()
         while 1:
             if escaped and c in self.ESCAPED_CHARS:
+                # we handle escaped \ and " chars here
                 escaped = False
                 s += self.next()
-            elif escaped and c not in self.ESCAPED_CHARS:
-                raise ValueError('bad escape sequence', s+self.peek())
+            elif escaped:
+                # but we ignore all the others and
+                # let the str.decode('string_escape') escape them
+                escaped = False
+                s += '\\' + self.next()
             elif c == '\\':
                 escaped = True
                 self.next()
@@ -150,7 +154,7 @@ class Lexer(object):
                 s += self.next()
             c = self.peek()
         self.next() # swallow the closing "
-        self.emit(str, s)
+        self.emit(str, s.decode('string_escape'))
         return self.state_start
 
     def state_comment(self):

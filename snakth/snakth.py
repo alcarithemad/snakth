@@ -68,6 +68,8 @@ def compile_snakth(ex, fn='<string>', debug=False):
     l = Lexer(ex)
     p = Parser(l)
     p.run()
+    if debug:
+        print ast.dump(p.tree)
     c = compile(p.tree, fn, 'exec', __future__.print_function.compiler_flag)
     return c
 
