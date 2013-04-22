@@ -84,7 +84,7 @@ if __name__ == '__main__':
     parser.add_argument('file', nargs='?')
 
     args = parser.parse_args()
-    if not os.path.exists(args.file):
+    if not os.path.exists(args.file or ''):
         parser.print_help()
         sys.exit()
 
