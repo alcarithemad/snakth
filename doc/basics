@@ -1,0 +1,43 @@
+;makes a comment
+
+;first of all, everything is in ()
+(print
+    "this is print!"
+    "it's specifically the 3.x style print function\n"
+    "which means you can control it with keyword arguments"
+)
+
+(print
+    "let's make the separator a newline"
+    "so this prints on multiple lines"
+    sep: "\n"
+)
+(print "string\x20escapes work as you'd expect\nfrom normal python")
+
+;import works similarly to normal python, with a few noteworthy changes:
+
+; standard import
+(import pickle)
+
+; from math import ceil, floor
+(import math ceil floor)
+
+; from json import loads as jl, dumps as jd
+(import json loads: jl dumps: jd)
+
+; math is easy, too:
+(print "math is fun!" (- (* (^ 1 3) (+ 5 2)) 10))
+
+; define a function with a default argument (b = 1), varargs c, and kwargs d
+(def func (a b:1 *c **d)
+    (print a b c d)
+)
+
+; now let's call it
+
+; let's make a class that inherits from object
+(class foo (object)
+    (def bar (self x)
+        (return (* x x))
+    )
+)
