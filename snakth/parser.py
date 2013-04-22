@@ -110,7 +110,7 @@ class Parser(object):
                 else:
                     return op
             elif name in self.BINOPS and len(call) > 3:
-                pass # TODO: handle (+ 1 2 3)
+                raise SyntaxError # TODO: handle (+ 1 2 3)
             elif name in self.BOOLOPS:
                 values = [self.parse(v, expr=False) for v in call[1:]]
                 op = ast.BoolOp(

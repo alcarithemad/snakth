@@ -215,5 +215,8 @@ class Lexer(object):
 
     def state_number(self):
         n = self.accept(self.NUMBERS)
-        self.emit(int, n)
+        if len(n) == 1 and n == '-':
+            self.emit('name', n)
+        else:
+            self.emit(int, n)
         return self.state_start
