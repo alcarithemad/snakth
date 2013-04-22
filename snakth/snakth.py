@@ -16,12 +16,10 @@ def install_import_hook():
 class SnakthImporter(object):
     @staticmethod
     def find_module(name, path=None):
-        print 'finding', name
         lname = name.rsplit('.', 1)[-1]
         for d in (path or sys.path):
             f = os.path.join(d, lname + '.lisp')
             if os.path.exists(f):
-                print 'found it!'
                 return SnakthLoader(f)
 
 class SnakthLoader(object):
@@ -29,17 +27,15 @@ class SnakthLoader(object):
         self.path = path
 
     def load_module(self, name):
-        print 'loading', name
         mod = sys.modules.get(name)
         if not mod:
             mod = load_file(self.path, name)
             if '.' in name:
                 parent, child = name.rsplit('.', 1)
-                setattr(sys.modules[parent_name], child_name, mod)
+                setattr(sys.modules[parent], child, mod)
         return mod
 
 def load_file(fn, name=None):
-    print 'in load_file'
     if not name:
         name = os.path.splitext(os.path.basename(fn))[0]
     result = new.module(name)
@@ -51,10 +47,8 @@ def load_file(fn, name=None):
         #pseudo = dict([(k, v) for k, v in globals().items()])
         pseudo = {}
         pseudo['__name__'] = name
-        local = {}
-        exec compiled in pseudo, local
+        exec compiled in pseudo
         sys.modules[name].__dict__.update(pseudo)
-        sys.modules[name].__dict__.update(local)
         return result
     except:
         del sys.modules[name]
